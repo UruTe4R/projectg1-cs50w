@@ -61,7 +61,7 @@ def add_page(request):
                     "error": f"this title '{title}' already exists!"
                 })
             util.save_entry(title, text)
-            return HttpResponseRedirect(reverse("index"))
+            return HttpResponseRedirect(reverse("entry", args=[title]))
         else:
             # i send back the form again with errors
             return render(request, "encyclopedia/add.html", {
