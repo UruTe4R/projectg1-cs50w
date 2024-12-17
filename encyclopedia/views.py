@@ -5,6 +5,11 @@ from django import forms
 
 from . import util
 
+class CreateForm(forms.Form):
+    title = forms.CharField(label="title")
+    text = forms.CharField(label="text", widget=forms.Textarea(
+        attrs={"placeholder": "Write Paragraph..."}
+    ))
 
 def index(request):
     print("BRO", request.method)
@@ -43,14 +48,33 @@ def entry(request, title):
     
 
 def add_page(request):
+    print(request.method)
     if request.method == "POST":
-        ...
+        print("request>POST:", request.POST)
+        form = CreateForm(request.POST)
+        if form.is_valid():
+            title = form.cleaned_data["title"]
+            text = form.cleaned_data["text"]
+            if title in util.list_entries():
+                return render(request, "encyclopedia/add.html", {
+                    "form": form,
+                    "error": f"this title '{title}' already exists!"
+                })
+            util.save_entry(title, text)
+            return HttpResponseRedirect(reverse("index"))
+        else:
+            # i send back the form again with errors
+            return render(request, "encyclopedia/add.html", {
+                "form": form
+            })
     else:
-        return render(request, "encyclopedia/add.html")
+        return render(request, "encyclopedia/add.html", {
+            "form": CreateForm()
+        })
     
 
-def not_found(request):
+def not_found(request, not_found):
     return render(request, "encyclopedia/not_found.html", {
         "error_code": 404,
-        "error": "Page not found"
+        "error": f"Page /{not_found} not found"
     })
