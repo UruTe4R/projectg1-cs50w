@@ -1,14 +1,35 @@
 from django.shortcuts import render
 from django.http import HttpResponseRedirect
 from django.urls import reverse
+from django import forms
 
 from . import util
 
 
 def index(request):
-    return render(request, "encyclopedia/index.html", {
-        "entries": util.list_entries()
-    })
+    print("BRO", request.method)
+    print("a", request.POST)
+    print("b", type(request.POST))
+    entries = util.list_entries()
+    if request.method == "POST":
+        results = []
+        for entry in sorted(entries):
+            if request.POST.get('q').lower() == entry.lower():
+                return HttpResponseRedirect(reverse("entry", args=[entry]))
+            elif request.POST.get('q').lower() in entry.lower():
+                results.append(entry)
+                return render(request, "encyclopedia/index.html", {
+                    "entries": results,
+                    "result": True
+                })
+        return render(request, "encyclopedia/index.html", {
+            "entries": results,
+            "result": True
+        })
+    else:    
+        return render(request, "encyclopedia/index.html", {
+            "entries": entries
+        })
 
 def entry(request, title):
     entry = util.get_entry(title)
@@ -26,9 +47,7 @@ def add_page(request):
         ...
     else:
         return render(request, "encyclopedia/add.html")
-
-def search_page(request):
-    ...
+    
 
 def not_found(request):
     return render(request, "encyclopedia/not_found.html", {
