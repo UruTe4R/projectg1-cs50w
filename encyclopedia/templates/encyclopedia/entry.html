@@ -8,6 +8,6 @@
   <a href="{% url 'edit' heading=title %}">EDIT</a>
 
   <p>
-    {{ entry }}
+    {{ entry|safe }}
   </p>
 {% endblock %}

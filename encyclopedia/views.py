@@ -2,7 +2,8 @@ from django.shortcuts import render
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django import forms
-import re
+import random
+import markdown2
 
 from . import util
 
@@ -54,7 +55,7 @@ def entry(request, title):
     if not entry:
         return HttpResponseRedirect(reverse("not_found", args=[404]))
     return render(request, "encyclopedia/entry.html", {
-        "entry": entry,
+        "entry": markdown2.markdown(entry),
         "title": title
     })
     
@@ -115,6 +116,11 @@ def edit(request, heading):
             "heading": heading,
             "form": form
         })
+    
+def random_f(request):
+    list = util.list_entries()
+    result = random.choice(list)
+    return HttpResponseRedirect(reverse("entry", args=[result]))
 
 def not_found(request, not_found):
     return render(request, "encyclopedia/not_found.html", {
