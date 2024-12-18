@@ -2,13 +2,18 @@ from django.shortcuts import render
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django import forms
+import re
 
 from . import util
 
-class CreateForm(forms.Form):
+class AddForm(forms.Form):
     title = forms.CharField(label="title")
     text = forms.CharField(label="text", widget=forms.Textarea(
         attrs={"placeholder": "Write Paragraph..."}
+    ))
+
+class EditForm(forms.Form):
+    text = forms.CharField(label="edit text", widget=forms.Textarea(
     ))
 
 def index(request):
@@ -38,12 +43,19 @@ def index(request):
 
 def entry(request, title):
     entry = util.get_entry(title)
-    print(f"entry: {type(entry)}")
+    # pattern = r"^#.+\n(?P<text>.+)"
+    # print("title", title)
+    # print("entry", entry)
+    # match = re.search(pattern, entry, re.DOTALL)
+    # if not match:
+    #     return HttpResponseRedirect(reverse("not_found", args=[404]))
+    # content = match.group("text")
+    
     if not entry:
-        return HttpResponseRedirect(reverse("not_found"))
+        return HttpResponseRedirect(reverse("not_found", args=[404]))
     return render(request, "encyclopedia/entry.html", {
-        "title": title,
-        "entry": entry
+        "entry": entry,
+        "title": title
     })
     
 
@@ -51,7 +63,7 @@ def add_page(request):
     print(request.method)
     if request.method == "POST":
         print("request>POST:", request.POST)
-        form = CreateForm(request.POST)
+        form = AddForm(request.POST)
         if form.is_valid():
             title = form.cleaned_data["title"]
             text = form.cleaned_data["text"]
@@ -60,6 +72,7 @@ def add_page(request):
                     "form": form,
                     "error": f"this title '{title}' already exists!"
                 })
+            print("title:", title, "text:", text)
             util.save_entry(title, text)
             return HttpResponseRedirect(reverse("entry", args=[title]))
         else:
@@ -69,9 +82,39 @@ def add_page(request):
             })
     else:
         return render(request, "encyclopedia/add.html", {
-            "form": CreateForm()
+            "form": AddForm()
         })
     
+
+def edit(request, heading):
+    if request.method == "POST":
+        form = EditForm(request.POST)
+        if form.is_valid():
+            text = form.cleaned_data["text"]
+            util.save_entry(heading, text)
+            return HttpResponseRedirect(reverse("entry", args=[heading]))
+        else:
+            return render(request, "encyclopedia/edit.html", {
+                "form": form
+            })
+    else:
+        entry = util.get_entry(heading)
+        if not entry:
+            print("entry not found")
+            return HttpResponseRedirect(reverse("not_found", args=[404]))
+        print(entry)
+        # pattern = r"^#.+\n(?P<text>.+)"
+        # entry = util.get_entry(heading)
+        # match = re.search(pattern, entry, re.DOTALL)
+        # if not match:
+        #     print("match not found")
+        #     return HttpResponseRedirect(reverse("not_found", args=[404]))
+        # content = match.group("text")
+        form = EditForm(initial={"text": entry})
+        return render(request, "encyclopedia/edit.html", {
+            "heading": heading,
+            "form": form
+        })
 
 def not_found(request, not_found):
     return render(request, "encyclopedia/not_found.html", {
